@@ -1,0 +1,72 @@
+# Métadonnées du devoir GitHub Classroom
+# Formatif F1 — Semaine 1
+
+devoir:
+  id: "F1"
+  titre: "Formatif F1 — Introduction au Raspberry Pi et BMP280"
+  type: "formative"
+  semaine: 1
+  cours: "243-413-SH"
+
+# Indicateurs évalués
+indicateurs:
+  - code: "IND-00SX-E"
+    nom: "Exécution — Environnement & Déploiement"
+    ponderation: 50
+    criteres: ["2.1", "2.2", "2.3", "2.4", "2.6"]
+
+  - code: "IND-00SX-D"
+    nom: "Conception — Programmation"
+    ponderation: 50
+    criteres: ["4.1", "4.3"]
+
+# Tests automatisés
+tests:
+  - nom: "test_requirements_present"
+    description: "Vérifie que requirements.txt existe et contient les dépendances BMP280"
+    indicateur: "IND-00SX-E"
+    points: 25
+
+  - nom: "test_import_board"
+    description: "Vérifie que le module board peut être importé"
+    indicateur: "IND-00SX-E"
+    points: 15
+
+  - nom: "test_import_bmp280"
+    description: "Vérifie que le module adafruit_bmp peut être importé"
+    indicateur: "IND-00SX-E"
+    points: 10
+
+  - nom: "test_script_exists"
+    description: "Vérifie que le fichier capteur.py existe"
+    indicateur: "IND-00SX-D"
+    points: 15
+
+  - nom: "test_script_has_required_imports"
+    description: "Vérifie que le script contient les imports nécessaires"
+    indicateur: "IND-00SX-D"
+    points: 15
+
+  - nom: "test_script_creates_sensor"
+    description: "Vérifie que le script crée correctement l'objet capteur BMP280"
+    indicateur: "IND-00SX-D"
+    points: 15
+
+  - nom: "test_script_executes"
+    description: "Vérifie que le script s'exécute sans erreur"
+    indicateur: "IND-00SX-D"
+    points: 20
+
+  - nom: "test_script_output_format"
+    description: "Vérifie que le script produit le bon format de sortie (T°, P, Alt)"
+    indicateur: "IND-00SX-D"
+    points: 20
+
+# Points totaux
+points_totaux: 100
+
+# Configuration GitHub Classroom
+classroom:
+  nom_depot: "f1-introduction-raspberry-pi"
+  deadline: "Fin de la séance de laboratoire"
+  feedback: "automatique"
