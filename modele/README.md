@@ -118,8 +118,16 @@ Les tests vérifient que :
 | `test_script_exists` | Script capteur.py présent | 15% |
 | `test_script_has_required_imports` | Imports corrects | 15% |
 | `test_script_creates_sensor` | Objet capteur BMP280 créé | 15% |
-| `test_script_executes` | Script s'exécute sans erreur | 20% |
-| `test_script_output_format` | Format de sortie correct (T°, P, Alt) | 20% |
+| `test_script_syntax_valid` | Syntaxe Python valide | 10% |
+| `test_script_prints_output` | Contient des print() pour sortie | 15% |
+| `test_script_uses_sensor_methods` | Utilise .temperature, .pressure, .altitude | 15% |
+
+**⚠️ IMPORTANT**: Les tests GitHub Actions vérifient uniquement le **code** (syntaxe, structure, imports).
+Pour valider que le capteur fonctionne **réellement** sur le Raspberry Pi, exécutez :
+
+```bash
+bash validate_pi.sh
+```
 
 ---
 

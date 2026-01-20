@@ -192,110 +192,99 @@ class TestScriptExecution:
     """
     Tests pour vérifier l'exécution du script et la sortie
     Correspond à IND-00SX-D (Programmation) - Fonctionnalité
+
+    NOTE: Ces tests analysent le CODE du script, ils ne l'exécutent pas vraiment.
+    L'exécution réelle doit se faire sur le Raspberry Pi avec validate_pi.sh
     """
 
-    @patch('board.I2C')
-    @patch('adafruit_bmp.BMP280_I2C')
-    def test_script_executes(self, mock_bmp280_class, mock_i2c_class):
+    def test_script_syntax_valid(self):
         """
-        Vérifie que le script s'exécute sans erreur.
-        Points: 20% de IND-00SX-D
+        Vérifie que le script a une syntaxe Python valide.
+        Points: 10% de IND-00SX-D
         """
         script_path = Path(__file__).parent.parent / "capteur.py"
 
         if not script_path.exists():
             pytest.skip("capteur.py n'existe pas encore")
 
-        # Configurer les mocks pour BMP280
-        mock_sensor = MagicMock()
-        mock_sensor.temperature = 22.5
-        mock_sensor.pressure = 1013.25
-        mock_sensor.altitude = 30.5
-        mock_bmp280_class.return_value = mock_sensor
-        mock_i2c_class.return_value = MagicMock()
-
-        # Exécuter le script
+        # Compiler le script pour vérifier la syntaxe
         try:
-            result = subprocess.run(
-                [sys.executable, str(script_path)],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode != 0:
-                pytest.fail(
-                    f"⚠️ Le script capteur.py produit une erreur.\n"
-                    f"   Code de retour: {result.returncode}\n"
-                    f"   Erreur: {result.stderr}"
-                )
-
-            print("✅ Script capteur.py s'exécute sans erreur!")
-
-        except subprocess.TimeoutExpired:
+            with open(script_path) as f:
+                compile(f.read(), script_path, 'exec')
+            print("✅ Script capteur.py a une syntaxe Python valide!")
+        except SyntaxError as e:
             pytest.fail(
-                "⚠️ Le script capteur.py prend trop de temps à s'exécuter.\n"
-                "   Vérifiez qu'il n'y a pas de boucle infinie."
-            )
-        except Exception as e:
-            pytest.fail(
-                f"⚠️ Erreur lors de l'exécution du script: {str(e)}"
+                f"⚠️ Le script capteur.py contient une erreur de syntaxe.\n"
+                f"   Ligne {e.lineno}: {e.msg}"
             )
 
-    @patch('board.I2C')
-    @patch('adafruit_bmp.BMP280_I2C')
-    def test_script_output_format(self, mock_bmp280_class, mock_i2c_class):
+    def test_script_prints_output(self):
         """
-        Vérifie que le script produit le bon format de sortie pour BMP280.
-        Points: 20% de IND-00SX-D
+        Vérifie que le script contient des print() pour la sortie.
+        Points: 15% de IND-00SX-D
         """
         script_path = Path(__file__).parent.parent / "capteur.py"
 
         if not script_path.exists():
             pytest.skip("capteur.py n'existe pas encore")
 
-        # Configurer les mocks pour BMP280
-        mock_sensor = MagicMock()
-        mock_sensor.temperature = 22.5
-        mock_sensor.pressure = 1013.25
-        mock_sensor.altitude = 30.5
-        mock_bmp280_class.return_value = mock_sensor
-        mock_i2c_class.return_value = MagicMock()
+        content = script_path.read_text().lower()
 
-        # Exécuter le script
-        result = subprocess.run(
-            [sys.executable, str(script_path)],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-
-        output = result.stdout.lower()
-
-        # Vérifier que la sortie contient les informations requises pour BMP280
-        patterns_requis = [
-            r'température\s*[:=]\s*\d+\.?\d*\s*°?c?',
-            r'pression\s*[:=]\s*\d+\.?\d*\s*hpa?',
-            r'altitude\s*[:=]\s*\d+\.?\d*\s*m?'
-        ]
+        # Vérifier la présence de print pour température, pression, altitude
+        required_prints = ['température', 'pression', 'altitude']
 
         manquants = []
-        for pattern in patterns_requis:
-            if not re.search(pattern, output):
-                manquants.append(pattern)
+        for required in required_prints:
+            # Chercher "print" avec le mot clé
+            if not any(f'print{required}' in line.replace(' ', '') for line in content.lower().split('\n')):
+                # Cherche aussi le pattern "print(f...température...)"
+                if not (required in content and 'print' in content):
+                    manquants.append(required)
+
+        # Vérification plus souple: est-ce que les mots-clés sont dans le fichier?
+        has_temp = any('temp' in line.lower() and 'print' in line.lower() for line in content.split('\n'))
+        has_press = any('press' in line.lower() and 'print' in line.lower() for line in content.split('\n'))
+        has_alt = any('alt' in line.lower() and 'print' in line.lower() for line in content.split('\n'))
+
+        if not (has_temp and has_press and has_alt):
+            pytest.fail(
+                f"⚠️ Le script ne semble pas afficher toutes les mesures.\n"
+                f"   Assurez-vous d'avoir des print() pour température, pression et altitude.\n"
+                f"   Température: {'✓' if has_temp else '✗'}\n"
+                f"   Pression: {'✓' if has_press else '✗'}\n"
+                f"   Altitude: {'✓' if has_alt else '✗'}"
+            )
+
+        print("✅ Script contient des print() pour les mesures!")
+
+    def test_script_uses_sensor_methods(self):
+        """
+        Vérifie que le script utilise les méthodes du capteur (.temperature, .pressure, .altitude).
+        Points: 15% de IND-00SX-D
+        """
+        script_path = Path(__file__).parent.parent / "capteur.py"
+
+        if not script_path.exists():
+            pytest.skip("capteur.py n'existe pas encore")
+
+        content = script_path.read_text()
+
+        # Vérifier l'utilisation des attributs du capteur
+        required_attrs = ['.temperature', '.pressure', '.altitude']
+
+        manquants = []
+        for attr in required_attrs:
+            if attr not in content:
+                manquants.append(attr)
 
         if manquants:
             pytest.fail(
-                f"⚠️ Le script ne produit pas la sortie attendue.\n"
-                f"   Sortie actuelle:\n{result.stdout}\n"
-                f"   Format attendu:\n"
-                f"   Température : 22.50 °C\n"
-                f"   Pression : 1013.25 hPa\n"
-                f"   Altitude : 30.5 m"
+                f"⚠️ Le script n'utilise pas toutes les méthodes du capteur.\n"
+                f"   Attributs manquants: {', '.join(manquants)}\n"
+                f"   Attendu: sensor.temperature, sensor.pressure, sensor.altitude"
             )
 
-        print("✅ Format de sortie correct!")
-        print(f"   Sortie: {result.stdout.strip()}")
+        print("✅ Script utilise correctement les méthodes du capteur!")
 
 
 class TestConnaissance:
@@ -390,8 +379,20 @@ Son but est de vous donner une rétroaction rapide sur:
 
 📌 IND-00SX-D (Programmation)
    - Structure du script Python
-   - Lecture du capteur BMP280 (température, pression, altitude)
+   - Utilisation correcte du capteur BMP280
    - Format de sortie des données
+
+⚠️  IMPORTANT - Deux validations requises:
+
+1️⃣  GitHub Actions (ce test)
+   - Vérifie le CODE: syntaxe, imports, structure
+   - Fonctionne SANS Raspberry Pi
+
+2️⃣  Validation sur Raspberry Pi
+   - Exécutez: bash validate_pi.sh
+   - Vérifie le MATÉRIEL: capteur, câblage, I2C
+
+Les DEUX validations doivent réussir pour compléter le formatif!
 
 Si vous avez des échecs:
 1. Lisez attentivement les messages d'erreur
