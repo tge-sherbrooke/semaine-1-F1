@@ -177,10 +177,28 @@ uv run test_neoslider.py
 
 ## Validation automatique
 
-Pour valider sur le Raspberry Pi :
+### 1. Validation GitHub Actions (CI)
+
+Les tests GitHub Actions vérifient **la structure du code** sans nécessiter de matériel :
+
+```bash
+# Les tests s'exécutent automatiquement quand vous poussez sur GitHub
+# Ils utilisent des mocks pour simuler le matériel
+```
+
+**Ce qui est testé en CI :**
+- ✅ Présence de `requirements.txt` avec les bonnes dépendances
+- ✅ Syntaxe Python valide
+- ✅ Structure du script (imports, création du capteur, etc.)
+
+### 2. Validation sur le Raspberry Pi
+
+Pour valider le **fonctionnement matériel** sur le Raspberry Pi :
 
 ```bash
 uv run validate_setup.py
+# ou
+bash validate_pi.sh
 ```
 
 ---

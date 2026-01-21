@@ -23,17 +23,24 @@ jobs:
       - name: 📦 Installation des dépendances
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-mock adafruit-circuitpython-bmp
+          # Installer uniquement les dépendances de test
+          # Les bibliothèques Adafruit (adafruit-circuitpython-bmp, adafruit-blinka)
+          # sont spécifiques au matériel Raspberry Pi et ne sont pas disponibles
+          # pour Python standard. Les tests utilisent des mocks à la place.
+          pip install pytest pytest-mock
 
       - name: 🔍 Exécution des tests
         id: tests
         run: |
+          # Ajouter le répertoire tests au PYTHONPATH pour les mocks CI
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)/tests"
           python -m pytest tests/ -v --tb=short --color=yes
         continue-on-error: true
 
       - name: 📊 Génération du rapport
         if: always()
         run: |
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)/tests"
           python -m pytest tests/ -v --tb=no --color=no | tee test_output.txt
 
       - name: 💬 Commentaire sur le PR (si applicable)
