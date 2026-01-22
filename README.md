@@ -3,7 +3,7 @@
 **Cours** : 243-413-SH — Introduction aux objets connectés
 **Semaine** : 1
 **Type** : Formative (non notée)
-**Date limite** : Fin de la séance de laboratoire
+**Date limite** : Une semaine après réception du Raspberry Pi
 
 ---
 
@@ -50,6 +50,10 @@ Ce formatif vise à vérifier que vous êtes capable de :
 
 ## Instructions détaillées
 
+### Étape 0 : Installation de Raspberry Pi OS
+
+Suivre le guide de Raspberry Pi : https://www.raspberrypi.com/documentation/computers/getting-started.html
+
 ### Étape 1 : Connexion SSH sans mot de passe (Windows PowerShell)
 
 #### Générer une clé SSH
@@ -92,13 +96,13 @@ source ~/.bashrc
 
 # Configurer Git (IMPORTANT!)
 git config --global user.name "Prénom Nom"
-git config --global user.email "votre.email@etu.cegep.qc.ca"
+git config --global user.email "votre.email@cegepsherbrooke.qc.ca"
 git config --global init.defaultbranch main
 ```
 
 ```bash
 # Cloner votre dépôt GitHub Classroom
-git clone https://github.com/organisation/semaine-1-f1-votre-username.git
+git clone https://github.com/tge-sherbrooke/f1-votre-username.git
 cd semaine-1-f1-votre-username
 ```
 
