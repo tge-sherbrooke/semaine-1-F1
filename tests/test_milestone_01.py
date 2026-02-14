@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """
 Milestone 1: Environment Setup (25 points)
 ==========================================
 
 This milestone verifies that the student has:
-1. Created a valid test_bmp280.py script
+1. Created a valid test_aht20.py script
 2. Configured Python dependencies correctly
 3. Run local tests on the Raspberry Pi
 
@@ -37,42 +36,42 @@ REPO_ROOT = get_repo_root()
 # ---------------------------------------------------------------------------
 # Test 1.1: Script Exists (5 points)
 # ---------------------------------------------------------------------------
-def test_bmp280_script_exists():
+def test_aht20_script_exists():
     """
-    Verify that test_bmp280.py exists in the repository.
+    Verify that test_aht20.py exists in the repository.
 
-    Expected: test_bmp280.py file present
+    Expected: test_aht20.py file present
 
-    Suggestion: Create a file named test_bmp280.py at the repository root.
-    Copy the template from modele/test_bmp280.py if available.
+    Suggestion: Create a file named test_aht20.py at the repository root.
+    Copy the template from modele/test_aht20.py if available.
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     assert script_path.exists(), (
         f"\n\n"
-        f"Expected: test_bmp280.py file in repository root\n"
+        f"Expected: test_aht20.py file in repository root\n"
         f"Actual: File not found at {script_path}\n\n"
-        f"Suggestion: Create test_bmp280.py with your BMP280 sensor reading code.\n"
-        f"You can start from modele/test_bmp280.py if you haven't already.\n"
+        f"Suggestion: Create test_aht20.py with your AHT20 sensor reading code.\n"
+        f"You can start from modele/test_aht20.py if you haven't already.\n"
     )
 
 
 # ---------------------------------------------------------------------------
 # Test 1.2: Script Has Valid Python Syntax (5 points)
 # ---------------------------------------------------------------------------
-def test_bmp280_script_syntax():
+def test_aht20_script_syntax():
     """
-    Verify that test_bmp280.py has valid Python syntax.
+    Verify that test_aht20.py has valid Python syntax.
 
     Expected: Python code that compiles without SyntaxError
 
     Suggestion: Check for typos, missing colons, unbalanced parentheses.
-    Run 'python3 -m py_compile test_bmp280.py' locally to find errors.
+    Run 'python3 -m py_compile test_aht20.py' locally to find errors.
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found - skipping syntax check")
+        pytest.skip("test_aht20.py not found - skipping syntax check")
 
     content = script_path.read_text()
 
@@ -88,27 +87,27 @@ def test_bmp280_script_syntax():
             f"  - Unbalanced parentheses, brackets, or quotes\n"
             f"  - Incorrect indentation\n"
             f"\n"
-            f"Run locally: python3 -m py_compile test_bmp280.py\n"
+            f"Run locally: python3 -m py_compile test_aht20.py\n"
         )
 
 
 # ---------------------------------------------------------------------------
 # Test 1.3: Required Imports Present (5 points)
 # ---------------------------------------------------------------------------
-def test_bmp280_imports():
+def test_aht20_imports():
     """
-    Verify that test_bmp280.py imports the required libraries.
+    Verify that test_aht20.py imports the required libraries.
 
-    Expected: 'import board' and 'adafruit_bmp280' in the code
+    Expected: 'import board' and 'adafruit_ahtx0' in the code
 
     Suggestion: Add these imports at the top of your script:
         import board
-        import adafruit_bmp280
+        import adafruit_ahtx0
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found - skipping import check")
+        pytest.skip("test_aht20.py not found - skipping import check")
 
     content = script_path.read_text()
 
@@ -117,17 +116,17 @@ def test_bmp280_imports():
     if "import board" not in content and "from board" not in content:
         missing_imports.append("board")
 
-    if "adafruit_bmp280" not in content:
-        missing_imports.append("adafruit_bmp280")
+    if "adafruit_ahtx0" not in content:
+        missing_imports.append("adafruit_ahtx0")
 
     if missing_imports:
         pytest.fail(
             f"\n\n"
-            f"Expected: Required imports for BMP280 sensor\n"
+            f"Expected: Required imports for AHT20 sensor\n"
             f"Actual: Missing imports: {', '.join(missing_imports)}\n\n"
-            f"Suggestion: Add these imports at the top of test_bmp280.py:\n"
+            f"Suggestion: Add these imports at the top of test_aht20.py:\n"
             f"  import board\n"
-            f"  import adafruit_bmp280\n"
+            f"  import adafruit_ahtx0\n"
         )
 
 
@@ -140,21 +139,21 @@ def test_uv_dependencies():
 
     Expected: UV script metadata block with dependencies
 
-    Suggestion: Add this block at the top of test_bmp280.py (after shebang):
+    Suggestion: Add this block at the top of test_aht20.py:
         # /// script
         # requires-python = ">=3.9"
-        # dependencies = ["adafruit-circuitpython-bmp280", "adafruit-blinka"]
+        # dependencies = ["adafruit-circuitpython-ahtx0", "adafruit-blinka"]
         # ///
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found - skipping UV check")
+        pytest.skip("test_aht20.py not found - skipping UV check")
 
     content = script_path.read_text()
 
     has_uv_block = "# /// script" in content or "dependencies" in content
-    has_bmp280_dep = "adafruit-circuitpython-bmp280" in content or "adafruit_bmp280" in content
+    has_ahtx0_dep = "adafruit-circuitpython-ahtx0" in content or "adafruit_ahtx0" in content
 
     if not has_uv_block:
         pytest.fail(
@@ -164,10 +163,10 @@ def test_uv_dependencies():
             f"Suggestion: Add this block at the top of your script:\n"
             f"  # /// script\n"
             f"  # requires-python = \">=3.9\"\n"
-            f"  # dependencies = [\"adafruit-circuitpython-bmp280\", \"adafruit-blinka\"]\n"
+            f"  # dependencies = [\"adafruit-circuitpython-ahtx0\", \"adafruit-blinka\"]\n"
             f"  # ///\n"
             f"\n"
-            f"This allows running with: uv run test_bmp280.py\n"
+            f"This allows running with: uv run test_aht20.py\n"
         )
 
 

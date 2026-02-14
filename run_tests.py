@@ -1,9 +1,12 @@
-#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = []
+# ///
 """
 Test runner local pour le Formatif F1 - Semaine 1
 
-Ce script exécute les tests localement sur le Raspberry Pi et crée
-des fichiers marqueurs qui seront vérifiés par GitHub Actions.
+Ce script execute les tests localement sur le Raspberry Pi et cree
+des fichiers marqueurs qui seront verifies par GitHub Actions.
 
 Usage: python3 run_tests.py
 """
@@ -31,85 +34,128 @@ def print_header(text):
 
 
 def print_success(text):
-    print(f"{Colors.GREEN}✅ {text}{Colors.END}")
+    print(f"{Colors.GREEN}+ {text}{Colors.END}")
 
 
 def print_error(text):
-    print(f"{Colors.RED}❌ {text}{Colors.END}")
+    print(f"{Colors.RED}x {text}{Colors.END}")
 
 
 def print_warning(text):
-    print(f"{Colors.YELLOW}⚠️  {text}{Colors.END}")
+    print(f"{Colors.YELLOW}! {text}{Colors.END}")
 
 
 def check_ssh_key():
     """
-    Vérifie qu'une clé SSH publique existe et crée le marqueur.
+    Verifie qu'une cle SSH existe sur le Pi et teste la connexion GitHub.
     """
-    print_header("VÉRIFICATION SSH")
+    print_header("VERIFICATION SSH ET GITHUB")
 
     ssh_dir = Path.home() / ".ssh"
+    # Chercher d'abord la cle specifique au cours IoT
     pub_keys = [
+        ssh_dir / "id_ed25519_iot.pub",  # Cle recommandee pour le cours
         ssh_dir / "id_ed25519.pub",
         ssh_dir / "id_rsa.pub",
     ]
 
     key_found = False
+    key_path = None
+
     for key_path in pub_keys:
         if key_path.exists():
             key_found = True
-            print_success(f"Clé SSH publique trouvée: {key_path.name}")
+            print_success(f"Cle SSH publique trouvee: {key_path.name}")
 
-            # Lire le contenu de la clé publique
+            # Lire le contenu de la cle publique
             key_content = key_path.read_text().strip()
             print(f"   {key_content[:40]}...")
-
-            # Vérifier que authorized_keys existe sur le Pi (local check)
-            authorized_keys = Path.home() / ".ssh" / "authorized_keys"
-            if authorized_keys.exists():
-                auth_content = authorized_keys.read_text()
-                if key_content.split()[1] in auth_content:  # Comparer la partie clé
-                    print_success("La clé est dans authorized_keys (connexion sans mot de passe)")
-                else:
-                    print_warning("authorized_keys existe mais ne contient pas cette clé")
-            else:
-                print_warning("authorized_keys n'existe pas encore")
-                print("   Sur Windows PowerShell:")
-                print('   type $env:USERPROFILE\\.ssh\\id_ed25519.pub | ssh user@HOSTNAME.local "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"')
-
             break
 
     if not key_found:
-        print_error("Aucune clé SSH publique trouvée")
-        print("\n📚 Pour générer une clé SSH:")
-        print("   ssh-keygen -t ed25519 -C \"mon-raspberry-pi\"")
-        print("   (Appuyez 3x sur Entrée pour les valeurs par défaut)")
+        print_error("Aucune cle SSH publique trouvee")
+        print("\nPour generer une cle SSH sur le Raspberry Pi:")
+        print("   ssh-keygen -t ed25519 -C \"iot-cegep@etu.cegep.qc.ca\" -f ~/.ssh/id_ed25519_iot")
+        print("   (Appuyez 3x sur Entree pour les valeurs par defaut)")
+        print("\nPour afficher la cle publique:")
+        print("   cat ~/.ssh/id_ed25519_iot.pub")
+        print("\nPour ajouter la cle a GitHub:")
+        print("   1. Allez sur https://github.com -> Settings -> SSH and GPG keys")
+        print("   2. Cliquez sur 'New SSH key'")
+        print("   3. Collez la cle publique")
         return False
 
-    # Créer le marqueur SSH
+    # Verifier la configuration SSH pour GitHub
+    config_file = ssh_dir / "config"
+    if config_file.exists():
+        config_content = config_file.read_text()
+        if "github.com" in config_content and "id_ed25519_iot" in config_content:
+            print_success("Fichier ~/.ssh/config configure pour GitHub")
+        else:
+            print_warning("Fichier ~/.ssh/config existe mais n'est pas configure pour GitHub")
+            print("\nPour configurer SSH pour GitHub:")
+            print('   cat > ~/.ssh/config << \'EOF\'')
+            print('   Host github.com')
+            print('       HostName github.com')
+            print('       User git')
+            print('       IdentityFile ~/.ssh/id_ed25519_iot')
+            print('       IdentitiesOnly yes')
+            print('   EOF')
+            print('   chmod 600 ~/.ssh/config')
+    else:
+        print_warning("Fichier ~/.ssh/config introuvable")
+
+    # Tester la connexion GitHub
+    print("\nTest de connexion avec GitHub...")
+    try:
+        result = subprocess.run(
+            ['ssh', '-T', 'git@github.com'],
+            capture_output=True, text=True, timeout=10
+        )
+        # GitHub retourne un code non-zero mais avec le message "successfully authenticated"
+        if 'successfully authenticated' in result.stderr or result.returncode == 1:
+            print_success("Connexion GitHub fonctionnelle!")
+            # Extraire le nom d'utilisateur si possible
+            if 'Hi ' in result.stderr:
+                username = result.stderr.split('Hi ')[1].split('!')[0]
+                print(f"   Authentifie en tant que: {username}")
+        else:
+            print_warning("Connexion GitHub uncertaine")
+            print(f"   stderr: {result.stderr[:100]}")
+    except subprocess.TimeoutExpired:
+        print_warning("Timeout lors de la connexion GitHub - verifiez votre connexion internet")
+    except FileNotFoundError:
+        print_warning("SSH non trouve - installez: sudo apt install openssh-client")
+    except Exception as e:
+        print_warning(f"Erreur de connexion GitHub: {e}")
+        print("\nPour tester manuellement:")
+        print("   ssh -T git@github.com")
+
+    # Creer le marqueur SSH
     marker = Path(__file__).parent / ".test_markers" / "ssh_key_verified.txt"
     marker.parent.mkdir(exist_ok=True)
     marker.write_text(f"SSH key verified: {datetime.now().isoformat()}\n")
-    print_success(f"Marqueur SSH créé: {marker}")
+    marker.write_text(f"Key file: {key_path.name}\n")
+    print_success(f"Marqueur SSH cree: {marker}")
 
     return True
 
 
-def check_bmp280_script():
+def check_aht20_script():
     """
-    Vérifie le script test_bmp280.py.
+    Verifie le script test_aht20.py.
     """
-    print_header("VÉRIFICATION TEST_BMP280.PY")
+    print_header("VERIFICATION TEST_AHT20.PY")
 
-    script_path = Path(__file__).parent / "test_bmp280.py"
+    script_path = Path(__file__).parent / "test_aht20.py"
 
     if not script_path.exists():
-        print_error("Fichier test_bmp280.py introuvable")
+        print_error("Fichier test_aht20.py introuvable")
         return False
 
-    print_success("Fichier test_bmp280.py trouvé")
+    print_success("Fichier test_aht20.py trouve")
 
-    # Vérifier la syntaxe
+    # Verifier la syntaxe
     try:
         with open(script_path) as f:
             compile(f.read(), script_path, 'exec')
@@ -118,36 +164,36 @@ def check_bmp280_script():
         print_error(f"Erreur de syntaxe ligne {e.lineno}: {e.msg}")
         return False
 
-    # Vérifier les imports
+    # Verifier les imports
     content = script_path.read_text()
-    required = ['board', 'adafruit_bmp280']
+    required = ['board', 'adafruit_ahtx0']
 
     for imp in required:
         if imp in content:
-            print_success(f"Import trouvé: {imp}")
+            print_success(f"Import trouve: {imp}")
         else:
             print_error(f"Import manquant: {imp}")
             return False
 
-    # Vérifier les dépendances UV
-    if 'dependencies' in content and 'adafruit-circuitpython-bmp280' in content:
-        print_success("Dépendances UV configurées")
+    # Verifier les dependances UV
+    if 'dependencies' in content and 'adafruit-circuitpython-ahtx0' in content:
+        print_success("Dependances UV configurees")
     else:
-        print_warning("Dépendances UV non trouvées (décommentées dans le script?)")
+        print_warning("Dependances UV non trouvees (decommentees dans le script?)")
 
-    # Créer le marqueur
-    marker = Path(__file__).parent / ".test_markers" / "bmp280_script_verified.txt"
-    marker.write_text(f"BMP280 script verified: {datetime.now().isoformat()}\n")
-    print_success(f"Marqueur BMP280 créé: {marker}")
+    # Creer le marqueur
+    marker = Path(__file__).parent / ".test_markers" / "aht20_script_verified.txt"
+    marker.write_text(f"AHT20 script verified: {datetime.now().isoformat()}\n")
+    print_success(f"Marqueur AHT20 cree: {marker}")
 
     return True
 
 
 def check_neoslider_script():
     """
-    Vérifie le script test_neoslider.py.
+    Verifie le script test_neoslider.py.
     """
-    print_header("VÉRIFICATION TEST_NEOSLIDER.PY")
+    print_header("VERIFICATION TEST_NEOSLIDER.PY")
 
     script_path = Path(__file__).parent / "test_neoslider.py"
 
@@ -155,9 +201,9 @@ def check_neoslider_script():
         print_warning("test_neoslider.py introuvable (optionnel)")
         return True  # Non obligatoire
 
-    print_success("Fichier test_neoslider.py trouvé")
+    print_success("Fichier test_neoslider.py trouve")
 
-    # Vérifier la syntaxe
+    # Verifier la syntaxe
     try:
         with open(script_path) as f:
             compile(f.read(), script_path, 'exec')
@@ -166,32 +212,32 @@ def check_neoslider_script():
         print_error(f"Erreur de syntaxe ligne {e.lineno}: {e.msg}")
         return False
 
-    # Vérifier les imports
+    # Verifier les imports
     content = script_path.read_text()
     required = ['board', 'adafruit_seesaw']
 
     for imp in required:
         if imp in content:
-            print_success(f"Import trouvé: {imp}")
+            print_success(f"Import trouve: {imp}")
         else:
             print_error(f"Import manquant: {imp}")
             return False
 
-    # Créer le marqueur
+    # Creer le marqueur
     marker = Path(__file__).parent / ".test_markers" / "neoslider_script_verified.txt"
     marker.write_text(f"NeoSlider script verified: {datetime.now().isoformat()}\n")
-    print_success(f"Marqueur NeoSlider créé: {marker}")
+    print_success(f"Marqueur NeoSlider cree: {marker}")
 
     return True
 
 
 def run_hardware_tests():
     """
-    Tente d'exécuter les tests matériels (si sur Raspberry Pi).
+    Tente d'executer les tests materiels (si sur Raspberry Pi).
     """
-    print_header("TESTS MATÉRIEL (Raspberry Pi)")
+    print_header("TESTS MATERIEL (Raspberry Pi)")
 
-    # Vérifier si on est sur un Raspberry Pi
+    # Verifier si on est sur un Raspberry Pi
     try:
         with open('/proc/cpuinfo', 'r') as f:
             cpuinfo = f.read()
@@ -200,13 +246,13 @@ def run_hardware_tests():
         is_rpi = False
 
     if not is_rpi:
-        print_warning("Pas sur Raspberry Pi - tests matériels skipés")
-        print("   Exécutez ce script sur le Raspberry Pi pour les tests matériels")
+        print_warning("Pas sur Raspberry Pi - tests materiels skipes")
+        print("   Executez ce script sur le Raspberry Pi pour les tests materiels")
         return True
 
-    print_success("Raspberry Pi détecté")
+    print_success("Raspberry Pi detecte")
 
-    # Vérifier i2cdetect
+    # Verifier i2cdetect
     try:
         result = subprocess.run(
             ['sudo', 'i2cdetect', '-y', '1'],
@@ -214,27 +260,27 @@ def run_hardware_tests():
         )
         if result.returncode == 0:
             output = result.stdout
-            if '77' in output:
-                print_success("BMP280 détecté à l'adresse 0x77")
+            if '38' in output:
+                print_success("AHT20 detecte a l'adresse 0x38")
             else:
-                print_warning("BMP280 non détecté à 0x77 - vérifiez le câblage")
+                print_warning("AHT20 non detecte a 0x38 - verifiez le cablage STEMMA QT")
 
             if '30' in output:
-                print_success("NeoSlider détecté à l'adresse 0x30")
+                print_success("NeoSlider detecte a l'adresse 0x30")
             else:
-                print_warning("NeoSlider non détecté à 0x30 (optionnel)")
+                print_warning("NeoSlider non detecte a 0x30 (optionnel)")
 
-            # Créer le marqueur matériel
+            # Creer le marqueur materiel
             marker = Path(__file__).parent / ".test_markers" / "hardware_detected.txt"
             marker.write_text(f"Hardware scan: {datetime.now().isoformat()}\n{output}\n")
-            print_success(f"Marqueur matériel créé: {marker}")
+            print_success(f"Marqueur materiel cree: {marker}")
         else:
-            print_error("i2cdetect a échoué")
+            print_error("i2cdetect a echoue")
             return False
     except FileNotFoundError:
-        print_warning("i2cdetect non trouvé - installez: sudo apt install i2c-tools")
+        print_warning("i2cdetect non trouve - installez: sudo apt install i2c-tools")
     except subprocess.TimeoutExpired:
-        print_warning("i2cdetect timeout - vérifiez I2C")
+        print_warning("i2cdetect timeout - verifiez I2C")
     except Exception as e:
         print_warning(f"Erreur i2cdetect: {e}")
 
@@ -243,9 +289,9 @@ def run_hardware_tests():
 
 def update_gitignore():
     """
-    Met à jour .gitignore pour permettre de commettre les marqueurs de tests.
-    Supprime la ligne '.test_markers/' du .gitignore pour permettre aux étudiants
-    de pousser les marqueurs créés par run_tests.py.
+    Met a jour .gitignore pour permettre de commettre les marqueurs de tests.
+    Supprime la ligne '.test_markers/' du .gitignore pour permettre aux etudiants
+    de pousser les marqueurs crees par run_tests.py.
     """
     gitignore_path = Path(__file__).parent / ".gitignore"
     marker_dir = Path(__file__).parent / ".test_markers"
@@ -275,12 +321,12 @@ def update_gitignore():
 
     if modified:
         gitignore_path.write_text('\n'.join(new_lines) + '\n')
-        print_success(".gitignore mis à jour - les marqueurs peuvent être commités")
+        print_success(".gitignore mis a jour - les marqueurs peuvent etre commites")
 
 
 def create_test_summary():
     """
-    Crée un résumé des tests pour GitHub Actions.
+    Cree un resume des tests pour GitHub Actions.
     """
     marker_dir = Path(__file__).parent / ".test_markers"
     summary_file = marker_dir / "test_summary.txt"
@@ -297,7 +343,7 @@ Markers:
         summary += f"  - {marker.stem}: {marker.read_text().strip()}\n"
 
     summary_file.write_text(summary)
-    print_success(f"Résumé des tests créé: {summary_file}")
+    print_success(f"Resume des tests cree: {summary_file}")
 
 
 def main():
@@ -309,16 +355,16 @@ def main():
 
     results = {
         "SSH": check_ssh_key(),
-        "BMP280": check_bmp280_script(),
+        "AHT20": check_aht20_script(),
         "NeoSlider": check_neoslider_script(),
         "Hardware": run_hardware_tests(),
     }
 
-    # Créer le résumé
+    # Creer le resume
     create_test_summary()
 
-    # Afficher le résultat final
-    print_header("RÉSULTAT FINAL")
+    # Afficher le resultat final
+    print_header("RESULTAT FINAL")
 
     all_passed = all(results.values())
 
@@ -326,28 +372,28 @@ def main():
         if passed:
             print_success(f"{test}: OK")
         else:
-            print_error(f"{test}: ÉCHEC")
+            print_error(f"{test}: ECHEC")
 
     print()
 
     if all_passed:
-        print(f"{Colors.GREEN}{Colors.BOLD}🎉 TOUS LES TESTS SONT PASSÉS!{Colors.END}")
+        print(f"{Colors.GREEN}{Colors.BOLD}TOUS LES TESTS SONT PASSES!{Colors.END}")
 
-        # Met à jour .gitignore pour permettre de commettre les marqueurs
+        # Met a jour .gitignore pour permettre de commettre les marqueurs
         update_gitignore()
 
-        print("\n📤 Vous pouvez maintenant pousser vos modifications:")
+        print("\nVous pouvez maintenant pousser vos modifications:")
         print("   git add .")
-        print("   git commit -m \"feat: tests locaux passés\"")
+        print("   git commit -m \"feat: tests locaux passes\"")
         print("   git push")
 
-        # Créer le marqueur final de succès
+        # Creer le marqueur final de succes
         marker = Path(__file__).parent / ".test_markers" / "all_tests_passed.txt"
         marker.write_text(f"All tests passed: {datetime.now().isoformat()}\n")
 
         return 0
     else:
-        print(f"{Colors.RED}{Colors.BOLD}⚠️  CERTAINS TESTS ONT ÉCHOUÉ{Colors.END}")
+        print(f"{Colors.RED}{Colors.BOLD}CERTAINS TESTS ONT ECHOUE{Colors.END}")
         print("\nCorrigez les erreurs ci-dessus et relancez:")
         print("   python3 run_tests.py")
 

@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.9"
-# dependencies = ["adafruit-circuitpython-bmp280", "adafruit-circuitpython-seesaw", "adafruit-blinka"]
+# dependencies = ["adafruit-circuitpython-ahtx0", "adafruit-circuitpython-seesaw", "adafruit-blinka"]
 # ///
 """
 Local Hardware Validation for Formatif F1
@@ -16,7 +15,7 @@ Usage:
 The script will:
 1. Check SSH key configuration
 2. Verify I2C communication
-3. Test BMP280 sensor
+3. Test AHT20 sensor
 4. Test NeoSlider (optional)
 5. Create marker files for GitHub Actions
 
@@ -152,61 +151,51 @@ def check_i2c():
 
 
 # ---------------------------------------------------------------------------
-# Test: BMP280 Sensor
+# Test: AHT20 Sensor
 # ---------------------------------------------------------------------------
-def check_bmp280(i2c):
-    """Test BMP280 sensor reading."""
-    header("BMP280 SENSOR TEST")
+def check_aht20(i2c):
+    """Test AHT20 sensor reading."""
+    header("AHT20 SENSOR TEST")
 
     if i2c is None:
-        fail("Cannot test BMP280 - I2C not available")
+        fail("Cannot test AHT20 - I2C not available")
         return False
 
     try:
-        import adafruit_bmp280
+        import adafruit_ahtx0
 
-        # Try default address first (0x77), then alternate (0x76)
-        sensor = None
-        try:
-            sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, address=0x77)
-            info("BMP280 found at address 0x77")
-        except:
-            try:
-                sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, address=0x76)
-                info("BMP280 found at address 0x76")
-            except:
-                pass
-
-        if sensor is None:
-            fail("BMP280 not detected at 0x76 or 0x77")
-            print("\n  Check connections:")
-            print("    - VCC to 3.3V (NOT 5V!)")
-            print("    - GND to GND")
-            print("    - SCL to GPIO 3 (Pin 5)")
-            print("    - SDA to GPIO 2 (Pin 3)")
-            print("\n  Run i2cdetect to verify:")
-            print("    sudo i2cdetect -y 1")
-            return False
+        sensor = adafruit_ahtx0.AHTx0(i2c)
+        info("AHT20 found at address 0x38")
 
         # Read values
         temp = sensor.temperature
-        pressure = sensor.pressure
-        altitude = sensor.altitude
+        humidity = sensor.relative_humidity
+
+        # Sanity checks
+        assert -40 <= temp <= 85, f"Temperature out of range: {temp}"
+        assert 0 <= humidity <= 100, f"Humidity out of range: {humidity}"
 
         success(f"Temperature: {temp:.1f} C")
-        success(f"Pressure: {pressure:.1f} hPa")
-        success(f"Altitude: {altitude:.1f} m")
+        success(f"Humidity: {humidity:.1f} %")
 
-        create_marker("bmp280_verified", f"T={temp:.1f}C P={pressure:.1f}hPa A={altitude:.1f}m")
+        create_marker("aht20_verified", f"T={temp:.1f}C H={humidity:.1f}%")
         return True
 
     except ImportError:
-        fail("adafruit_bmp280 not installed")
+        fail("adafruit_ahtx0 not installed")
         print("\n  Install with:")
-        print("    pip install adafruit-circuitpython-bmp280")
+        print("    pip install adafruit-circuitpython-ahtx0")
+        return False
+    except AssertionError as e:
+        fail(f"AHT20 sanity check failed: {e}")
         return False
     except Exception as e:
-        fail(f"BMP280 error: {e}")
+        fail(f"AHT20 error: {e}")
+        print("\n  Check connections:")
+        print("    - STEMMA QT SHIM pressed onto GPIO header")
+        print("    - STEMMA QT cable clicked into SHIM and AHT20")
+        print("\n  Run i2cdetect to verify:")
+        print("    sudo i2cdetect -y 1")
         return False
 
 
@@ -250,18 +239,18 @@ def check_neoslider(i2c):
 # ---------------------------------------------------------------------------
 # Test: Script Validation
 # ---------------------------------------------------------------------------
-def check_bmp280_script():
-    """Verify test_bmp280.py script."""
+def check_aht20_script():
+    """Verify test_aht20.py script."""
     header("SCRIPT VALIDATION")
 
-    script_path = Path(__file__).parent / "test_bmp280.py"
+    script_path = Path(__file__).parent / "test_aht20.py"
 
     if not script_path.exists():
-        fail("test_bmp280.py not found")
-        print("\n  Create your test_bmp280.py script in the same folder.")
+        fail("test_aht20.py not found")
+        print("\n  Create your test_aht20.py script in the same folder.")
         return False
 
-    success("test_bmp280.py exists")
+    success("test_aht20.py exists")
 
     # Check syntax
     try:
@@ -276,7 +265,7 @@ def check_bmp280_script():
     content = script_path.read_text()
     checks = [
         ("import board", "board import"),
-        ("adafruit_bmp280", "adafruit_bmp280 import"),
+        ("adafruit_ahtx0", "adafruit_ahtx0 import"),
     ]
 
     all_present = True
@@ -288,7 +277,7 @@ def check_bmp280_script():
             all_present = False
 
     if all_present:
-        create_marker("bmp280_script_verified", "Script structure valid")
+        create_marker("aht20_script_verified", "Script structure valid")
 
     return all_present
 
@@ -306,14 +295,14 @@ def main():
     results["SSH"] = check_ssh_key()
     i2c = check_i2c()
     results["I2C"] = i2c is not None
-    results["BMP280"] = check_bmp280(i2c)
+    results["AHT20"] = check_aht20(i2c)
     results["NeoSlider"] = check_neoslider(i2c)
-    results["Script"] = check_bmp280_script()
+    results["Script"] = check_aht20_script()
 
     # Summary
     header("FINAL RESULTS")
 
-    all_required_passed = results["SSH"] and results["I2C"] and results["BMP280"] and results["Script"]
+    all_required_passed = results["SSH"] and results["I2C"] and results["AHT20"] and results["Script"]
 
     for test, passed in results.items():
         if passed:

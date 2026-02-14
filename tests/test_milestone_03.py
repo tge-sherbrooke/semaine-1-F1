@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Milestone 3: Complete Implementation (40 points)
 =================================================
@@ -50,10 +49,10 @@ def test_main_function_exists():
         if __name__ == "__main__":
             main()
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
@@ -68,7 +67,7 @@ def test_main_function_exists():
             f"Suggestion: Organize your code with a main function:\n"
             f"  def main():\n"
             f"      i2c = board.I2C()\n"
-            f"      sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)\n"
+            f"      sensor = adafruit_ahtx0.AHTx0(i2c)\n"
             f"      print(f\"Temperature: {{sensor.temperature:.1f}} C\")\n"
             f"\n"
             f"  if __name__ == \"__main__\":\n"
@@ -99,14 +98,14 @@ def test_error_handling():
 
     Suggestion: Wrap hardware code in try/except:
         try:
-            sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
+            sensor = adafruit_ahtx0.AHTx0(i2c)
         except Exception as e:
             print(f"Error: {e}")
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
@@ -121,7 +120,7 @@ def test_error_handling():
             f"Suggestion: Add error handling for robustness:\n"
             f"  try:\n"
             f"      i2c = board.I2C()\n"
-            f"      sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)\n"
+            f"      sensor = adafruit_ahtx0.AHTx0(i2c)\n"
             f"      print(f\"Temperature: {{sensor.temperature:.1f}} C\")\n"
             f"  except Exception as e:\n"
             f"      print(f\"Error reading sensor: {{e}}\")\n"
@@ -130,31 +129,36 @@ def test_error_handling():
 
 
 # ---------------------------------------------------------------------------
-# Test 3.3: Altitude Calculation (Optional - 5 points)
+# Test 3.3: Humidity Display Format (5 points)
 # ---------------------------------------------------------------------------
-def test_altitude_reading():
+def test_humidity_display():
     """
-    Verify that the script reads altitude (optional bonus).
+    Verify that the script displays formatted humidity output.
 
-    Expected: Code that accesses sensor.altitude
+    Expected: A formatted humidity print statement with '%' or 'humidite'
 
-    Suggestion: Read altitude with:
-        altitude = sensor.altitude
-        print(f"Altitude: {altitude:.1f} m")
+    Suggestion: Display humidity like this:
+        print(f"Humidite: {sensor.relative_humidity:.1f} %")
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
-    has_altitude = ".altitude" in content
+    has_humidity_display = (
+        ".relative_humidity" in content
+        and ("%" in content or "humidite" in content.lower())
+    )
 
-    if not has_altitude:
-        # This is optional - just a warning, not a failure
-        pytest.skip(
-            "Altitude reading not found - this is optional but recommended"
+    if not has_humidity_display:
+        pytest.fail(
+            f"\n\n"
+            f"Expected: Formatted humidity display with '%' or 'humidite'\n"
+            f"Actual: No formatted humidity output found\n\n"
+            f"Suggestion: Add humidity display to your script:\n"
+            f"  print(f\"Humidite: {{sensor.relative_humidity:.1f}} %\")\n"
         )
 
 
@@ -180,7 +184,7 @@ def test_all_local_tests_passed():
         )
 
     passed_marker = markers_dir / "all_tests_passed.txt"
-    bmp_marker = markers_dir / "bmp280_script_verified.txt"
+    aht_marker = markers_dir / "aht20_script_verified.txt"
     ssh_marker = markers_dir / "ssh_key_verified.txt"
 
     if passed_marker.exists():
@@ -189,7 +193,7 @@ def test_all_local_tests_passed():
     # Check which markers we have
     existing_markers = [f.name for f in markers_dir.glob("*.txt")]
 
-    if bmp_marker.exists() and ssh_marker.exists():
+    if aht_marker.exists() and ssh_marker.exists():
         # Core markers exist, close enough
         return
 
@@ -258,10 +262,10 @@ def test_code_quality():
 
     Suggestion: Add documentation to your code.
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
@@ -275,7 +279,7 @@ def test_code_quality():
             f"Expected: Documentation (docstrings or comments)\n"
             f"Actual: Minimal documentation found\n\n"
             f"Suggestion: Add documentation to explain your code:\n"
-            f"  \"\"\"Script to read BMP280 temperature and pressure.\"\"\"\n"
+            f"  \"\"\"Script to read AHT20 temperature and humidity.\"\"\"\n"
             f"\n"
             f"  # Initialize I2C bus\n"
             f"  i2c = board.I2C()\n"

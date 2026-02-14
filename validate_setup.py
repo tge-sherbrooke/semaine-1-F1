@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.9"
-# dependencies = ["adafruit-circuitpython-bmp280", "adafruit-circuitpython-seesaw", "adafruit-blinka"]
+# dependencies = ["adafruit-circuitpython-ahtx0", "adafruit-circuitpython-seesaw", "adafruit-blinka"]
 # ///
-"""Validation complète de la configuration Raspberry Pi."""
+"""Validation complete de la configuration Raspberry Pi."""
 
 import sys
 
@@ -11,22 +11,23 @@ def test_i2c():
     try:
         import board
         i2c = board.I2C()
-        print("✓ I2C OK")
+        print("+ I2C OK")
         return i2c
     except Exception as e:
-        print(f"✗ I2C ERREUR: {e}")
+        print(f"x I2C ERREUR: {e}")
         return None
 
-def test_bmp280(i2c):
-    """Test du capteur BMP280."""
+def test_aht20(i2c):
+    """Test du capteur AHT20."""
     try:
-        import adafruit_bmp280
-        sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, address=0x77)
+        import adafruit_ahtx0
+        sensor = adafruit_ahtx0.AHTx0(i2c)
         temp = sensor.temperature
-        print(f"✓ BMP280 OK - Température: {temp:.1f}°C")
+        humidity = sensor.relative_humidity
+        print(f"+ AHT20 OK - Temperature: {temp:.1f}C, Humidite: {humidity:.1f}%")
         return True
     except Exception as e:
-        print(f"✗ BMP280 ERREUR: {e}")
+        print(f"x AHT20 ERREUR: {e}")
         return False
 
 def test_neoslider(i2c):
@@ -40,10 +41,10 @@ def test_neoslider(i2c):
 
         # Test: allumer en vert
         pixels.fill((0, 255, 0))
-        print("✓ NeoSlider LEDs OK - LEDs allumées en vert")
+        print("+ NeoSlider LEDs OK - LEDs allumees en vert")
         return True, pixels
     except Exception as e:
-        print(f"✗ NeoSlider ERREUR: {e}")
+        print(f"x NeoSlider ERREUR: {e}")
         return False, None
 
 if __name__ == "__main__":
@@ -55,10 +56,10 @@ if __name__ == "__main__":
     if not i2c:
         sys.exit(1)
 
-    bmp_ok = test_bmp280(i2c)
+    aht_ok = test_aht20(i2c)
     neo_ok, pixels = test_neoslider(i2c)
 
-    # Éteindre les LEDs avant de terminer
+    # Eteindre les LEDs avant de terminer
     if pixels:
         try:
             pixels.fill((0, 0, 0))
@@ -66,8 +67,8 @@ if __name__ == "__main__":
             pass
 
     print("=" * 50)
-    if bmp_ok and neo_ok:
-        print("✓ TOUS LES TESTS RÉUSSIS")
+    if aht_ok and neo_ok:
+        print("+ TOUS LES TESTS REUSSIS")
     else:
-        print("✗ CERTAINS TESTS ONT ÉCHOUÉ")
+        print("x CERTAINS TESTS ONT ECHOUE")
         sys.exit(1)

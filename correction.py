@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = []
+# ///
 """
 Script de correction pour le Formatif F1 — Semaine 1
 Cours 243-413-SH — Introduction aux objets connectés
@@ -165,7 +168,7 @@ def calculer_notes(resultats_tests):
     score_e = 0
     if test_status.get("test_requirements_present") == "passed":
         score_e += 50
-    if test_status.get("test_import_board") == "passed" or test_status.get("test_import_si7021") == "passed":
+    if test_status.get("test_import_board") == "passed" or test_status.get("test_import_dht22") == "passed":
         score_e += 50
 
     notes["IND-00SX-E"]["score"] = score_e

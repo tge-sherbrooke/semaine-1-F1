@@ -48,7 +48,7 @@ jobs:
           echo "MILESTONE 2: Basic Functionality"
           echo "=============================================="
           echo ""
-          echo "Verifying: I2C init, sensor creation, temperature/pressure reading"
+          echo "Verifying: I2C init, sensor creation, temperature/humidity reading"
           echo ""
           pytest tests/test_milestone_02.py -v --tb=short
           echo "milestone_2_passed=true" >> $GITHUB_OUTPUT

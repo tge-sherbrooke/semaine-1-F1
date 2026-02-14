@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
 """
 Milestone 2: Basic Functionality (35 points)
 =============================================
 
 This milestone verifies that the student has:
-1. Implemented BMP280 sensor reading logic
+1. Implemented AHT20 sensor reading logic
 2. Used I2C communication correctly
-3. Created proper temperature/pressure reading functions
+3. Created proper temperature/humidity reading functions
 
 These tests analyze code structure - actual hardware testing
 is done locally via validate_pi.py.
@@ -46,10 +45,10 @@ def test_i2c_initialization():
     Suggestion: Initialize I2C with:
         i2c = board.I2C()
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
@@ -69,47 +68,43 @@ def test_i2c_initialization():
             f"  import board\n"
             f"  i2c = board.I2C()  # Uses board.SCL and board.SDA\n"
             f"\n"
-            f"The BMP280 communicates via I2C protocol.\n"
+            f"The AHT20 communicates via I2C protocol.\n"
         )
 
 
 # ---------------------------------------------------------------------------
-# Test 2.2: BMP280 Sensor Object Creation (10 points)
+# Test 2.2: AHT20 Sensor Object Creation (10 points)
 # ---------------------------------------------------------------------------
-def test_bmp280_sensor_creation():
+def test_aht20_sensor_creation():
     """
-    Verify that the script creates a BMP280 sensor object.
+    Verify that the script creates an AHT20 sensor object.
 
-    Expected: BMP280_I2C sensor initialization
+    Expected: AHTx0 sensor initialization
 
     Suggestion: Create sensor with:
-        sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)
+        sensor = adafruit_ahtx0.AHTx0(i2c)
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
     # Check for sensor creation patterns
     has_sensor = any([
-        "BMP280_I2C" in content,
-        "Adafruit_BMP280_I2C" in content,
-        "adafruit_bmp280." in content and "i2c" in content.lower(),
+        "AHTx0(" in content,
+        "adafruit_ahtx0." in content and "i2c" in content.lower(),
     ])
 
     if not has_sensor:
         pytest.fail(
             f"\n\n"
-            f"Expected: BMP280 sensor object creation\n"
-            f"Actual: No BMP280 sensor initialization found\n\n"
+            f"Expected: AHT20 sensor object creation\n"
+            f"Actual: No AHT20 sensor initialization found\n\n"
             f"Suggestion: Create the sensor object:\n"
-            f"  import adafruit_bmp280\n"
-            f"  sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c)\n"
-            f"\n"
-            f"If your sensor is at address 0x77 (not 0x76):\n"
-            f"  sensor = adafruit_bmp280.Adafruit_BMP280_I2C(i2c, address=0x77)\n"
+            f"  import adafruit_ahtx0\n"
+            f"  sensor = adafruit_ahtx0.AHTx0(i2c)\n"
         )
 
 
@@ -126,10 +121,10 @@ def test_temperature_reading():
         temp = sensor.temperature
         print(f"Temperature: {temp:.1f} C")
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
@@ -150,40 +145,40 @@ def test_temperature_reading():
 
 
 # ---------------------------------------------------------------------------
-# Test 2.4: Pressure Reading (8 points)
+# Test 2.4: Humidity Reading (8 points)
 # ---------------------------------------------------------------------------
-def test_pressure_reading():
+def test_humidity_reading():
     """
-    Verify that the script reads pressure from the sensor.
+    Verify that the script reads humidity from the sensor.
 
-    Expected: Code that accesses sensor.pressure
+    Expected: Code that accesses sensor.relative_humidity
 
-    Suggestion: Read pressure with:
-        pressure = sensor.pressure
-        print(f"Pressure: {pressure:.1f} hPa")
+    Suggestion: Read humidity with:
+        humidity = sensor.relative_humidity
+        print(f"Humidite: {humidity:.1f} %")
     """
-    script_path = REPO_ROOT / "test_bmp280.py"
+    script_path = REPO_ROOT / "test_aht20.py"
 
     if not script_path.exists():
-        pytest.skip("test_bmp280.py not found")
+        pytest.skip("test_aht20.py not found")
 
     content = script_path.read_text()
 
-    has_pressure = any([
-        ".pressure" in content,
-        "pressure" in content.lower() and "sensor" in content.lower(),
+    has_humidity = any([
+        ".relative_humidity" in content,
+        "humidity" in content.lower() and "sensor" in content.lower(),
     ])
 
-    if not has_pressure:
+    if not has_humidity:
         pytest.fail(
             f"\n\n"
-            f"Expected: Pressure reading from sensor\n"
-            f"Actual: No pressure reading found\n\n"
-            f"Suggestion: Read pressure like this:\n"
-            f"  pressure = sensor.pressure\n"
-            f"  print(f\"Pressure: {{pressure:.1f}} hPa\")\n"
+            f"Expected: Humidity reading from sensor\n"
+            f"Actual: No humidity reading found\n\n"
+            f"Suggestion: Read humidity like this:\n"
+            f"  humidity = sensor.relative_humidity\n"
+            f"  print(f\"Humidite: {{humidity:.1f}} %\")\n"
             f"\n"
-            f"The BMP280 measures atmospheric pressure in hectopascals (hPa).\n"
+            f"The AHT20 measures relative humidity as a percentage.\n"
         )
 
 
@@ -203,26 +198,26 @@ def test_hardware_markers_present():
     if not markers_dir.exists():
         pytest.skip("No .test_markers/ directory - skipping hardware check")
 
-    # Look for BMP280-specific markers
-    bmp_markers = list(markers_dir.glob("*bmp*")) + list(markers_dir.glob("*i2c*"))
+    # Look for AHT20-specific markers
+    aht_markers = list(markers_dir.glob("*aht*")) + list(markers_dir.glob("*i2c*"))
 
     # Also check the general test summary
     summary = markers_dir / "test_summary.txt"
 
     if summary.exists():
         content = summary.read_text().lower()
-        if "bmp280" in content or "i2c" in content:
+        if "aht20" in content or "i2c" in content:
             return  # Pass - hardware was validated
 
-    if not bmp_markers:
+    if not aht_markers:
         pytest.fail(
             f"\n\n"
-            f"Expected: BMP280/I2C hardware validation markers\n"
+            f"Expected: AHT20/I2C hardware validation markers\n"
             f"Actual: No hardware-specific markers found\n\n"
             f"Suggestion: On your Raspberry Pi:\n"
-            f"  1. Connect the BMP280 sensor to I2C pins\n"
+            f"  1. Connect the AHT20 sensor via STEMMA QT\n"
             f"  2. Run: sudo i2cdetect -y 1\n"
-            f"  3. Verify address 0x76 or 0x77 appears\n"
+            f"  3. Verify address 0x38 appears\n"
             f"  4. Run: python3 validate_pi.py\n"
             f"  5. Commit and push .test_markers/\n"
         )
